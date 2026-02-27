@@ -40,7 +40,7 @@ export default function HomePage() {
         aria-live="polite"
       >
         <p className="text-lg font-medium text-primary">
-          Break time! Step away and recharge.
+          커피 잔이 다 비워졌네요. 자리에서 일어나 가볍게 기지개를 켜보세요.
         </p>
       </div>
 

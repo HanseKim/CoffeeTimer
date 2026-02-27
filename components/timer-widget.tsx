@@ -23,8 +23,8 @@ export function TimerWidget() {
   // Show toast when finished
   useEffect(() => {
     if (isFinished) {
-      toast("Time for a break!", {
-        description: "Step away from your desk and enjoy your coffee.",
+      toast("쉬어갈 시간입니다! ☕", {
+        description: "열심히 집중한 당신, 자리에서 일어나 잠시 여유를 즐기세요.",
         icon: <Coffee className="h-5 w-5 text-primary" />,
         duration: 8000,
       })
