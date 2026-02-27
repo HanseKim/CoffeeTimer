@@ -21,9 +21,10 @@ export default function HomePage() {
             Coffee Break Timer
           </h1>
         </div>
-        <p className="text-muted-foreground text-md md:text-base">
-          타이머를 맞추고 집중해 보세요. 오롯이 집중한 당신을 위한 휴식이 기다리고 있습니다.
-        </p>
+        <div className="w-full flex flex-col items-center justify-center">
+          <span className="block text-muted-foreground text-md md:text-base">타이머를 맞추고 집중해 보세요.</span> 
+          <span className="block text-muted-foreground text-md md:text-base">오롯이 집중한 당신을 위한 휴식이 기다리고 있습니다.</span>
+        </div>
       </header>
 
       {/* Timer Widget */}

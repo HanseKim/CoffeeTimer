@@ -11,7 +11,7 @@ export function TimerDisplay() {
   const formatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
 
   return (
-    <div className="text-center">
+    <div className="text-center mb-4">
       <time
         className={`font-mono text-6xl md:text-7xl font-bold tracking-wider ${isFinished ? "text-[#E9B14E]" : "text-[#AA8D5A]"} tabular-nums`}
         aria-live="polite"

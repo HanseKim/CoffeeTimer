@@ -34,7 +34,7 @@ export function TimerWidget() {
   const percentage = totalTime > 0 ? (timeLeft / totalTime) * 100 : 0
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-col items-center gap-2">
       <CoffeeCup percentage={percentage} />
       <TimerDisplay />
       <TimerControls />
