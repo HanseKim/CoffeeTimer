@@ -3,6 +3,7 @@
 import { useTimerStore } from "@/store/use-timer-store"
 import { TimerWidget } from "@/components/timer-widget"
 import { Coffee } from "lucide-react"
+import { CoffeeAmbience } from "@/components/coffee-ambience"
 
 export default function HomePage() {
   const isFinished = useTimerStore((s) => s.isFinished)
@@ -25,10 +26,12 @@ export default function HomePage() {
           <span className="block text-muted-foreground text-md md:text-base">타이머를 맞추고 집중해 보세요.</span> 
           <span className="block text-muted-foreground text-md md:text-base">오롯이 집중한 당신을 위한 휴식이 기다리고 있습니다.</span>
         </div>
+        <CoffeeAmbience />
       </header>
 
       {/* Timer Widget */}
       <TimerWidget />
+      
 
       {/* Finished message */}
       <div

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useTimerStore } from "@/store/use-timer-store"
 
 const PRESETS = [
+  { label: "5m", seconds: 300 },
   { label: "10m", seconds: 600 },
   { label: "30m", seconds: 1800 },
   { label: "45m", seconds: 2700 },
