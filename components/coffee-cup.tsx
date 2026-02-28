@@ -1,11 +1,21 @@
 "use client"
 
+import { useRef, useEffect } from "react"
+
 interface CoffeeCupProps {
   percentage: number
 }
 
 export function CoffeeCup({ percentage }: CoffeeCupProps) {
+  const prevPctRef = useRef(percentage)
   const clampedPct = Math.max(0, Math.min(100, percentage))
+
+  // 퍼센트가 올라가는 경우(시간 변경/되돌리기) 즉시 반영, 내려가는 경우만 부드럽게
+  const isRising = clampedPct > prevPctRef.current
+  const transitionMs = isRising ? 0 : 1000
+  useEffect(() => {
+    prevPctRef.current = clampedPct
+  }, [clampedPct])
 
   // Mug body dimensions (Ember-style rounded mug)
   const mugWidth = 160
@@ -155,7 +165,10 @@ export function CoffeeCup({ percentage }: CoffeeCupProps) {
         {/* Coffee fill with wave animation */}
         <g clipPath="url(#mugInterior)">
           {clampedPct > 0 && (
-            <path fill="url(#coffeeGrad)" className="transition-all duration-1000 linear">
+            <path
+              fill="url(#coffeeGrad)"
+              style={{ transition: `all ${transitionMs}ms linear` }}
+            >
               <animate
                 attributeName="d"
                 dur="2.5s"
@@ -182,30 +195,15 @@ export function CoffeeCup({ percentage }: CoffeeCupProps) {
           )}
 
           {clampedPct > 5 && (
-            <path fill="url(#cremaGrad)" opacity={0.7}>
-              <animate
-                attributeName="d"
-                dur="2.5s"
-                repeatCount="indefinite"
-                values={`
-                  M ${innerX + 2},${coffeeTopY + waveAmplitude}
-                  C ${innerX + waveWidth * 0.25},${coffeeTopY - waveAmplitude} ${innerX + waveWidth * 0.5},${coffeeTopY + waveAmplitude * 1.5} ${innerX + waveWidth * 0.75},${coffeeTopY - waveAmplitude * 0.5}
-                  S ${innerX + waveWidth - 2},${coffeeTopY + waveAmplitude} ${innerX + waveWidth - 2},${coffeeTopY}
-                  L ${innerX + waveWidth - 2},${coffeeTopY + 4}
-                  L ${innerX + 2},${coffeeTopY + 4} Z;
-                  M ${innerX + 2},${coffeeTopY - waveAmplitude * 0.5}
-                  C ${innerX + waveWidth * 0.25},${coffeeTopY + waveAmplitude * 1.2} ${innerX + waveWidth * 0.5},${coffeeTopY - waveAmplitude} ${innerX + waveWidth * 0.75},${coffeeTopY + waveAmplitude}
-                  S ${innerX + waveWidth - 2},${coffeeTopY - waveAmplitude * 0.5} ${innerX + waveWidth - 2},${coffeeTopY}
-                  L ${innerX + waveWidth - 2},${coffeeTopY + 4}
-                  L ${innerX + 2},${coffeeTopY + 4} Z;
-                  M ${innerX + 2},${coffeeTopY + waveAmplitude}
-                  C ${innerX + waveWidth * 0.25},${coffeeTopY - waveAmplitude} ${innerX + waveWidth * 0.5},${coffeeTopY + waveAmplitude * 1.5} ${innerX + waveWidth * 0.75},${coffeeTopY - waveAmplitude * 0.5}
-                  S ${innerX + waveWidth - 2},${coffeeTopY + waveAmplitude} ${innerX + waveWidth - 2},${coffeeTopY}
-                  L ${innerX + waveWidth - 2},${coffeeTopY + 4}
-                  L ${innerX + 2},${coffeeTopY + 4} Z
-                `}
-              />
-            </path>
+            <rect
+              x={innerX + 2}
+              y={coffeeTopY}
+              width={innerWidth - 4}
+              height={4}
+              fill="url(#cremaGrad)"
+              opacity={0.7}
+              style={{ transition: `all ${transitionMs}ms linear` }}
+            />
           )}
         </g>
 

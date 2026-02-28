@@ -45,14 +45,17 @@ export function CoffeeAmbience() {
 
       const audio = new Audio()
       audio.volume = 0.4
+      audio.loop = true
       audio.src = track.src
       audioRef.current = audio
       setActiveTrack(index)
 
       const onEnded = () => {
-        setActiveTrack(null)
-        audioRef.current = null
-        handlersRef.current = null
+        // loop=true여도 일부 환경에서 ended가 발생할 수 있음 → 다시 재생
+        if (audioRef.current === audio) {
+          audio.currentTime = 0
+          audio.play().catch(() => {})
+        }
       }
       const onError = () => {
         stopBGM()
