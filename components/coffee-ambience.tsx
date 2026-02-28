@@ -4,201 +4,105 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-// 저작권 없는 카페 BGM 플레이리스트
-// public/audio/ 폴더에 MP3 파일을 넣고 경로를 추가하세요.
-// BGM이 없으면 brown noise(카페 웅성거림)로 자동 전환됩니다.
-// 출처: Pixabay, Mixkit, Incompetech 등
-const CAFE_BGM_PLAYLIST: string[] = [
-  "/audio/cafe1.mp3",
-  "/audio/cafe2.mp3",
+// 버튼별 BGM 트랙 (public/audio/ 폴더에 MP3 추가)
+const CAFE_BGM_TRACKS: { label: string; src: string }[] = [
+  { label: "Cafe BGM 1", src: "/audio/cafe1.mp3" },
+  { label: "Cafe BGM 2", src: "/audio/cafe2.mp3" },
 ]
 
 export function CoffeeAmbience() {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [mode, setMode] = useState<"bgm" | "noise">("bgm")
-  const modeRef = useRef<"bgm" | "noise">("bgm")
+  const [activeTrack, setActiveTrack] = useState<number | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const currentIndexRef = useRef(0)
-  const audioCtxRef = useRef<AudioContext | null>(null)
-  const nodesRef = useRef<{
-    brownNoise: AudioBufferSourceNode | null
-    gainNode: GainNode | null
-  }>({ brownNoise: null, gainNode: null })
-
-  const createBrownNoise = useCallback((ctx: AudioContext): AudioBufferSourceNode => {
-    const bufferSize = ctx.sampleRate * 4
-    const buffer = ctx.createBuffer(2, bufferSize, ctx.sampleRate)
-
-    for (let channel = 0; channel < 2; channel++) {
-      const data = buffer.getChannelData(channel)
-      let lastOut = 0.0
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1
-        data[i] = (lastOut + 0.02 * white) / 1.02
-        lastOut = data[i]
-        data[i] *= 3.5
-      }
-    }
-
-    const source = ctx.createBufferSource()
-    source.buffer = buffer
-    source.loop = true
-    return source
-  }, [])
-
-  const startBrownNoise = useCallback(() => {
-    const ctx = new AudioContext()
-    audioCtxRef.current = ctx
-
-    const brownNoise = createBrownNoise(ctx)
-    const gainNode = ctx.createGain()
-    gainNode.gain.value = 0.12
-
-    const lpFilter = ctx.createBiquadFilter()
-    lpFilter.type = "lowpass"
-    lpFilter.frequency.value = 400
-    lpFilter.Q.value = 0.7
-
-    const bpFilter = ctx.createBiquadFilter()
-    bpFilter.type = "bandpass"
-    bpFilter.frequency.value = 250
-    bpFilter.Q.value = 0.5
-
-    brownNoise.connect(lpFilter)
-    lpFilter.connect(bpFilter)
-    bpFilter.connect(gainNode)
-    gainNode.connect(ctx.destination)
-
-    brownNoise.start()
-
-    nodesRef.current = { brownNoise, gainNode }
-  }, [createBrownNoise])
-
-  const stopBrownNoise = useCallback(() => {
-    if (nodesRef.current.brownNoise) {
-      nodesRef.current.brownNoise.stop()
-    }
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close()
-    }
-    nodesRef.current = { brownNoise: null, gainNode: null }
-    audioCtxRef.current = null
-  }, [])
+  const handlersRef = useRef<{ ended: () => void; error: () => void } | null>(null)
 
   const stopBGM = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.src = ""
-      audioRef.current = null
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (handlersRef.current) {
+      audio.removeEventListener("ended", handlersRef.current.ended)
+      audio.removeEventListener("error", handlersRef.current.error)
+      handlersRef.current = null
     }
+    audio.pause()
+    audio.src = ""
+    audio.load()
+    audioRef.current = null
+    setActiveTrack(null)
   }, [])
 
-  const startBGM = useCallback(() => {
-    const playlist = CAFE_BGM_PLAYLIST.filter(Boolean)
-    if (playlist.length === 0) return
+  const playTrack = useCallback(
+    (index: number) => {
+      const track = CAFE_BGM_TRACKS[index]
+      if (!track?.src) return
 
-    const audio = new Audio()
-    audio.volume = 0.4
-    audioRef.current = audio
-    currentIndexRef.current = 0
-    let errorCount = 0
-
-    const fallbackToNoise = () => {
-      stopBGM()
-      modeRef.current = "noise"
-      setMode("noise")
-      startBrownNoise()
-    }
-
-    const playNext = () => {
-      const src = playlist[currentIndexRef.current]
-      audio.src = src
-      audio.play().catch(() => {
-        // play() 실패 시 handleError에서 처리 (이중 호출 방지)
-      })
-    }
-
-    const handleEnded = () => {
-      errorCount = 0
-      currentIndexRef.current = (currentIndexRef.current + 1) % playlist.length
-      playNext()
-    }
-
-    const handleError = () => {
-      errorCount++
-      if (errorCount >= playlist.length) {
-        fallbackToNoise()
+      if (activeTrack === index) {
+        stopBGM()
         return
       }
-      currentIndexRef.current = (currentIndexRef.current + 1) % playlist.length
-      playNext()
-    }
 
-    audio.addEventListener("ended", handleEnded)
-    audio.addEventListener("error", handleError)
-    playNext()
-  }, [stopBGM, startBrownNoise])
-
-  const startAmbience = useCallback(() => {
-    const playlist = CAFE_BGM_PLAYLIST.filter(Boolean)
-    if (playlist.length > 0) {
-      modeRef.current = "bgm"
-      setMode("bgm")
-      startBGM()
-    } else {
-      modeRef.current = "noise"
-      setMode("noise")
-      startBrownNoise()
-    }
-    setIsPlaying(true)
-  }, [startBGM, startBrownNoise])
-
-  const stopAmbience = useCallback(() => {
-    if (modeRef.current === "bgm") {
       stopBGM()
-    } else {
-      stopBrownNoise()
-    }
-    setIsPlaying(false)
-  }, [stopBGM, stopBrownNoise])
+
+      const audio = new Audio()
+      audio.volume = 0.4
+      audio.src = track.src
+      audioRef.current = audio
+      setActiveTrack(index)
+
+      const onEnded = () => {
+        setActiveTrack(null)
+        audioRef.current = null
+        handlersRef.current = null
+      }
+      const onError = () => {
+        stopBGM()
+      }
+      handlersRef.current = { ended: onEnded, error: onError }
+      audio.addEventListener("ended", onEnded)
+      audio.addEventListener("error", onError)
+
+      audio.play().catch(() => {
+        stopBGM()
+      })
+    },
+    [activeTrack, stopBGM]
+  )
 
   useEffect(() => {
     return () => {
-      stopBGM()
-      stopBrownNoise()
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ""
+        audioRef.current = null
+      }
     }
-  }, [stopBGM, stopBrownNoise])
-
-  const toggle = useCallback(() => {
-    if (isPlaying) {
-      if (modeRef.current === "bgm") stopBGM()
-      else stopBrownNoise()
-      setIsPlaying(false)
-    } else {
-      startAmbience()
-    }
-  }, [isPlaying, startAmbience, stopBGM, stopBrownNoise])
+  }, [])
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={toggle}
-      className="gap-2 text-muted-foreground hover:text-foreground transition-colors"
-      aria-label={isPlaying ? "Mute cafe ambience" : "Play cafe ambience"}
-    >
-      {isPlaying ? (
-        <Volume2 className="h-4 w-4" />
-      ) : (
-        <VolumeX className="h-4 w-4" />
-      )}
-      <span className="text-xs font-medium">
-        {isPlaying
-          ? mode === "bgm"
-            ? "Cafe BGM ON"
-            : "Cafe Ambience ON"
-          : "Cafe BGM"}
-      </span>
-    </Button>
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {CAFE_BGM_TRACKS.map((track, index) => (
+        <Button
+          key={track.src}
+          variant="ghost"
+          size="sm"
+          onClick={() => playTrack(index)}
+          className="gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={
+            activeTrack === index
+              ? `${track.label} 끄기`
+              : `${track.label} 재생`
+          }
+        >
+          {activeTrack === index ? (
+            <Volume2 className="h-4 w-4" />
+          ) : (
+            <VolumeX className="h-4 w-4" />
+          )}
+          <span className="text-xs font-medium">
+            {activeTrack === index ? `${track.label} ON` : track.label}
+          </span>
+        </Button>
+      ))}
+    </div>
   )
 }
